@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "preinstall": "curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh || echo \"wasm-pack install failed\""
   },
   "dependencies": {
     "life-game-core": "file:life-game-core/pkg",
