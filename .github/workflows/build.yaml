@@ -1,4 +1,4 @@
-name: Rust
+name: Build
 
 on:
   push:
@@ -11,14 +11,21 @@ env:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Rust
+      uses: actions/setup-rust@v1
+      with:
+        rust-version: stable
+
     - name: Build
       run: make build
-    - name: Deployment
-    - uses: amondnet/vercel-action@v25
+
+    - name: Deployment to Vercel
+      uses: amondnet/vercel-action@v25
       with:
         vercel-token: ${{ secrets.VERCEL_TOKEN }}
