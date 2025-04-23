@@ -1,3 +1,5 @@
+![showcase](./md-assets/showcase.png)
+
 ## dev
 
 ```bash
