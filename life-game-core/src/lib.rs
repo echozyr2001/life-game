@@ -1,3 +1,4 @@
+use js_sys::Array;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -68,8 +69,18 @@ impl Universe {
         self.grid = new_grid;
     }
 
-    pub fn get_grid(&self) -> Vec<u8> {
-        self.grid.iter().flatten().cloned().collect()
+    pub fn get_grid(&self) -> Array {
+        let outer_array = Array::new_with_length(self.rows as u32);
+
+        for (i, row) in self.grid.iter().enumerate() {
+            let row_array = Array::new_with_length(self.cols as u32);
+            for (j, &cell) in row.iter().enumerate() {
+                row_array.set(j as u32, JsValue::from_f64(cell as f64));
+            }
+            outer_array.set(i as u32, row_array.into());
+        }
+
+        outer_array
     }
 
     fn count_neighbors(&self, row: usize, col: usize) -> u8 {

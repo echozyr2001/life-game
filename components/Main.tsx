@@ -10,7 +10,7 @@ import { Globe, Pause, Play, XCircle } from "lucide-react";
 export function Main() {
   const [gridSize, setGridSize] = useState({ rows: 25, cols: 25 });
   const [tempGridSize, setTempGridSize] = useState({ rows: 25, cols: 25 });
-  const [grid, setGrid] = useState<number[][]>([]);
+  const [grid, setGrid] = useState<Array<Array<number>>>([]);
   const universeRef = useRef<Universe | null>(null);
   const [running, setRunning] = useState(false);
   const runningRef = useRef(running);
@@ -24,7 +24,7 @@ export function Main() {
     }
     universeRef.current = new Universe(gridSize.rows, gridSize.cols);
     universeRef.current.random();
-    setGrid(convertToGrid(universeRef.current.get_grid()));
+    setGrid(universeRef.current.get_grid() as Array<Array<number>>);
   }, [gridSize]);
 
   useEffect(() => {
@@ -41,40 +41,13 @@ export function Main() {
     setGridSize(tempGridSize);
   };
 
-  const convertToGrid = useCallback(
-    (flatArray: Uint8Array): number[][] => {
-      const grid: number[][] = [];
-
-      // 创建一个新的二维数组，初始值全为0
-      for (let i = 0; i < gridSize.rows; i++) {
-        grid[i] = new Array(gridSize.cols).fill(0);
-      }
-
-      // 填充实际数据
-      const totalCells = Math.min(
-        flatArray.length,
-        gridSize.rows * gridSize.cols
-      );
-      for (let idx = 0; idx < totalCells; idx++) {
-        const row = Math.floor(idx / gridSize.cols);
-        const col = idx % gridSize.cols;
-        if (row < gridSize.rows && col < gridSize.cols) {
-          grid[row][col] = flatArray[idx];
-        }
-      }
-
-      return grid;
-    },
-    [gridSize]
-  );
-
   const runSimulation = useCallback(() => {
     if (!runningRef.current || !universeRef.current) {
       return;
     }
     universeRef.current.next_generation();
-    setGrid(convertToGrid(universeRef.current.get_grid()));
-  }, [convertToGrid]);
+    setGrid(universeRef.current.get_grid() as Array<Array<number>>);
+  }, []);
 
   // 根据网格大小动态调整速度
   useEffect(() => {
@@ -145,10 +118,10 @@ export function Main() {
 
       if (row >= 0 && row < gridSize.rows && col >= 0 && col < gridSize.cols) {
         universeRef.current.toggle_cell(row, col);
-        setGrid(convertToGrid(universeRef.current.get_grid()));
+        setGrid(universeRef.current.get_grid() as Array<Array<number>>);
       }
     },
-    [gridSize, convertToGrid]
+    [gridSize]
   );
 
   const exists = (grid: number[][]) => {
@@ -252,7 +225,7 @@ export function Main() {
           onClick={() => {
             if (universeRef.current) {
               universeRef.current.random();
-              setGrid(convertToGrid(universeRef.current.get_grid()));
+              setGrid(universeRef.current.get_grid() as Array<Array<number>>);
             }
           }}
         >
@@ -268,7 +241,7 @@ export function Main() {
           onClick={() => {
             if (universeRef.current) {
               universeRef.current.clear();
-              setGrid(convertToGrid(universeRef.current.get_grid()));
+              setGrid(universeRef.current.get_grid() as Array<Array<number>>);
             }
           }}
         >
