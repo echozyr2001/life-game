@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import init, { Universe } from "life-game-core";
 import useInterval from "./useInterval";
 import { Globe, Pause, Play, XCircle } from "lucide-react";
@@ -160,7 +161,7 @@ export function Main() {
         Game of Life
       </h1>
 
-      <div className="my-4 flex justify-center gap-4 flex-wrap">
+      <div className="my-4 flex justify-center gap-4 flex-wrap items-center">
         <div>
           <label>Rows: </label>
           <input
@@ -202,15 +203,18 @@ export function Main() {
         <Button onClick={handleApplyGridSize} variant="outline">
           Apply
         </Button>
-        <div className="ml-4">
+        <div className="ml-4 flex items-center gap-2">
           <label>Speed: </label>
-          <input
-            type="range"
-            min="50"
-            max="500"
-            value={500 - speed + 50}
-            onChange={(e) => setSpeed(500 - parseInt(e.target.value) + 50)}
-            className="w-32 align-middle"
+          <Slider
+            className="w-32"
+            min={50}
+            max={500}
+            value={[500 - speed + 50]}
+            onValueChange={(values) => {
+              if (values.length > 0) {
+                setSpeed(500 - values[0] + 50);
+              }
+            }}
           />
         </div>
       </div>
