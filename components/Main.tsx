@@ -215,7 +215,7 @@ export function Main() {
         </div>
       </div>
 
-      <div style={{ margin: "0 auto", width: "fit-content" }}>
+      <div className="w-full flex justify-center">
         <canvas
           ref={canvasRef}
           onClick={handleCanvasClick}
