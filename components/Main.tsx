@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import init, { Universe } from "life-game-core";
 import useInterval from "./useInterval";
+import { Globe, Pause, Play, XCircle } from "lucide-react";
 
 const numRows = 25;
 const numCols = 35;
@@ -81,14 +83,10 @@ export function Main() {
         )}
       </div>
 
-      <div className="buttons m-3 p-5">
-        <button
-          type="button"
-          className={`inline-flex item-center text-white ${
-            running
-              ? "bg-orange-700 hover:bg-orange-800 focus:ring-orange-300 dark:bg-orange-600 dark:hover:bg-orange-700 dark:focus:ring-orange-800"
-              : "bg-blue-700 hover:bg-blue-800 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-          }  focus:outline-none focus:ring-4  font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2 disabled:opacity-50`}
+      <div className="buttons m-3 p-5 gap-8 flex justify-center">
+        <Button
+          variant={running ? "destructive" : "default"}
+          size="lg"
           onClick={() => {
             setRunning(!running);
             if (!running) {
@@ -97,13 +95,13 @@ export function Main() {
           }}
           disabled={!exists(grid)}
         >
-          <span className="icon">{running ? "Pause" : "Play"}</span>
+          <span className="icon">{running ? <Pause /> : <Play />}</span>
           <span className="mx-1">{running ? "Pause" : "Start"}</span>
-        </button>
+        </Button>
 
-        <button
-          type="button"
-          className={`inline-flex item-center text-white bg-red-700 hover:bg-red-800 focus:ring-red-300 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800 focus:outline-none focus:ring-4  font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2`}
+        <Button
+          variant="outline"
+          size="lg"
           onClick={() => {
             if (universeRef.current) {
               universeRef.current.random();
@@ -111,13 +109,15 @@ export function Main() {
             }
           }}
         >
-          <span className="icon">globe</span>
+          <span className="icon">
+            <Globe />
+          </span>
           <span className="mx-1">Random</span>
-        </button>
+        </Button>
 
-        <button
-          type="button"
-          className={`inline-flex item-center text-white bg-cyan-700 hover:bg-cyan-800 focus:ring-cyan-300 dark:bg-cyan-600 dark:hover:bg-cyan-700 dark:focus:ring-cyan-800 focus:outline-none focus:ring-4  font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2`}
+        <Button
+          variant="secondary"
+          size="lg"
           onClick={() => {
             if (universeRef.current) {
               universeRef.current.clear();
@@ -125,9 +125,11 @@ export function Main() {
             }
           }}
         >
-          <span className="icon">XCircle</span>
+          <span className="icon">
+            <XCircle />
+          </span>
           <span className="mx-1">Clear</span>
-        </button>
+        </Button>
       </div>
     </div>
   );
