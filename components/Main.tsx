@@ -14,6 +14,8 @@ export function Main() {
   const [running, setRunning] = useState(false);
   const runningRef = useRef(running);
   runningRef.current = running;
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [speed, setSpeed] = useState(150);
 
   const reinitializeUniverse = useCallback(() => {
     if (universeRef.current) {
@@ -40,14 +42,26 @@ export function Main() {
 
   const convertToGrid = useCallback(
     (flatArray: Uint8Array): number[][] => {
-      const grid = [];
+      const grid: number[][] = [];
+
+      // 创建一个新的二维数组，初始值全为0
       for (let i = 0; i < gridSize.rows; i++) {
-        grid.push(
-          Array.from(
-            flatArray.slice(i * gridSize.cols, (i + 1) * gridSize.cols)
-          )
-        );
+        grid[i] = new Array(gridSize.cols).fill(0);
       }
+
+      // 填充实际数据
+      const totalCells = Math.min(
+        flatArray.length,
+        gridSize.rows * gridSize.cols
+      );
+      for (let idx = 0; idx < totalCells; idx++) {
+        const row = Math.floor(idx / gridSize.cols);
+        const col = idx % gridSize.cols;
+        if (row < gridSize.rows && col < gridSize.cols) {
+          grid[row][col] = flatArray[idx];
+        }
+      }
+
       return grid;
     },
     [gridSize]
@@ -61,9 +75,80 @@ export function Main() {
     setGrid(convertToGrid(universeRef.current.get_grid()));
   }, [convertToGrid]);
 
+  // 根据网格大小动态调整速度
+  useEffect(() => {
+    const cellCount = gridSize.rows * gridSize.cols;
+    const newSpeed = Math.max(50, Math.min(500, 150 + (cellCount - 625) / 10));
+    setSpeed(newSpeed);
+  }, [gridSize]);
+
   useInterval(() => {
     runSimulation();
-  }, 150);
+  }, speed);
+
+  // 使用 Canvas 渲染网格
+  useEffect(() => {
+    if (!canvasRef.current || !grid.length) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const cellSize = 15;
+    const displayWidth = gridSize.cols * cellSize;
+    const displayHeight = gridSize.rows * cellSize;
+
+    // 获取设备像素比
+    const dpr = window.devicePixelRatio || 1;
+
+    // 设置 Canvas 的显示尺寸（CSS 尺寸）
+    canvas.style.width = `${displayWidth}px`;
+    canvas.style.height = `${displayHeight}px`;
+
+    // 设置 Canvas 的实际尺寸（考虑像素比）
+    canvas.width = displayWidth * dpr;
+    canvas.height = displayHeight * dpr;
+
+    // 根据像素比缩放绘图上下文
+    ctx.scale(dpr, dpr);
+
+    ctx.clearRect(0, 0, displayWidth, displayHeight);
+
+    for (let i = 0; i < gridSize.rows; i++) {
+      if (!grid[i]) continue; // 跳过不存在的行
+      for (let j = 0; j < gridSize.cols; j++) {
+        const cellValue = grid[i][j] || 0; // 如果单元格不存在，默认为0
+        ctx.fillStyle = cellValue ? "#A0C4DB" : "#F8FAFC";
+        ctx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
+        ctx.strokeStyle = "#E2EBF0";
+        ctx.strokeRect(j * cellSize, i * cellSize, cellSize, cellSize);
+      }
+    }
+  }, [grid, gridSize]);
+
+  // 处理 Canvas 点击事件
+  const handleCanvasClick = useCallback(
+    (event: React.MouseEvent<HTMLCanvasElement>) => {
+      if (!canvasRef.current || !universeRef.current) return;
+
+      const canvas = canvasRef.current;
+      const rect = canvas.getBoundingClientRect();
+      const cellSize = 15;
+
+      // 计算点击位置相对于 Canvas 的坐标
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      // 计算对应的网格单元格
+      const col = Math.floor(x / cellSize);
+      const row = Math.floor(y / cellSize);
+
+      if (row >= 0 && row < gridSize.rows && col >= 0 && col < gridSize.cols) {
+        universeRef.current.toggle_cell(row, col);
+        setGrid(convertToGrid(universeRef.current.get_grid()));
+      }
+    },
+    [gridSize, convertToGrid]
+  );
 
   const exists = (grid: number[][]) => {
     return grid.length > 0 && grid.some((row) => row.includes(1));
@@ -75,9 +160,9 @@ export function Main() {
         Game of Life
       </h1>
 
-      <div className="my-4 flex justify-center gap-4">
+      <div className="my-4 flex justify-center gap-4 flex-wrap">
         <div>
-          <label>rows: </label>
+          <label>Rows: </label>
           <input
             type="number"
             value={tempGridSize.rows}
@@ -96,7 +181,7 @@ export function Main() {
           />
         </div>
         <div>
-          <label>cols: </label>
+          <label>Cols: </label>
           <input
             type="number"
             value={tempGridSize.cols}
@@ -117,36 +202,28 @@ export function Main() {
         <Button onClick={handleApplyGridSize} variant="outline">
           Apply
         </Button>
+        <div className="ml-4">
+          <label>Speed: </label>
+          <input
+            type="range"
+            min="50"
+            max="500"
+            value={500 - speed + 50}
+            onChange={(e) => setSpeed(500 - parseInt(e.target.value) + 50)}
+            className="w-32 align-middle"
+          />
+        </div>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: `repeat(${gridSize.cols}, minmax(0, 1fr))`,
-          width: "fit-content",
-          margin: "0 auto",
-        }}
-      >
-        {grid.map((rows, i) =>
-          rows.map((col, k) => (
-            <div
-              key={`${i}-${k}`}
-              onClick={() => {
-                if (universeRef.current) {
-                  universeRef.current.toggle_cell(i, k);
-                  setGrid(convertToGrid(universeRef.current.get_grid()));
-                }
-              }}
-              style={{
-                width: 15,
-                height: 15,
-                backgroundColor: grid[i][k] ? "#A0C4DB" : "#F8FAFC",
-                border: "1px solid #E2EBF0",
-                transition: "background-color 0.2s ease",
-              }}
-            ></div>
-          ))
-        )}
+      <div style={{ margin: "0 auto", width: "fit-content" }}>
+        <canvas
+          ref={canvasRef}
+          onClick={handleCanvasClick}
+          style={{
+            border: "1px solid #E2EBF0",
+            cursor: "pointer",
+          }}
+        />
       </div>
 
       <div className="buttons m-3 p-5 gap-8 flex justify-center">
