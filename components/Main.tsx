@@ -75,8 +75,9 @@ export function Main() {
               style={{
                 width: 15,
                 height: 15,
-                backgroundColor: grid[i][k] ? "#DC143C" : "",
-                border: "1px solid #595959",
+                backgroundColor: grid[i][k] ? "#A0C4DB" : "#F8FAFC",
+                border: "1px solid #E2EBF0",
+                transition: "background-color 0.2s ease",
               }}
             ></div>
           ))
