@@ -1,17 +1,18 @@
 use wasm_bindgen::prelude::*;
 
-const NUM_ROWS: usize = 25;
-const NUM_COLS: usize = 35;
-
 #[wasm_bindgen]
 pub struct Universe {
-    grid: [[u8; NUM_COLS]; NUM_ROWS],
+    rows: usize,
+    cols: usize,
+    grid: Vec<Vec<u8>>,
 }
 
 impl Default for Universe {
     fn default() -> Self {
         Universe {
-            grid: [[0; NUM_COLS]; NUM_ROWS],
+            rows: 25,
+            cols: 25,
+            grid: vec![vec![0; 25]; 25],
         }
     }
 }
@@ -19,30 +20,36 @@ impl Default for Universe {
 #[wasm_bindgen]
 impl Universe {
     #[wasm_bindgen(constructor)]
-    pub fn new() -> Self {
+    pub fn new(rows: Option<usize>, cols: Option<usize>) -> Self {
+        let rows = rows.unwrap_or(25);
+        let cols = cols.unwrap_or(25);
         Universe {
-            grid: [[0; NUM_COLS]; NUM_ROWS],
+            rows,
+            cols,
+            grid: vec![vec![0; cols]; rows],
         }
     }
 
     pub fn random(&mut self) {
-        for i in 0..NUM_ROWS {
-            for j in 0..NUM_COLS {
-                self.grid[i][j] = if js_sys::Math::random() > 0.7 { 1 } else { 0 };
+        for row in &mut self.grid {
+            for cell in row {
+                *cell = if js_sys::Math::random() > 0.7 { 1 } else { 0 };
             }
         }
     }
 
     pub fn clear(&mut self) {
-        self.grid = [[0; NUM_COLS]; NUM_ROWS];
+        self.grid = vec![vec![0; self.cols]; self.rows];
     }
 
     pub fn toggle_cell(&mut self, row: usize, col: usize) {
-        self.grid[row][col] ^= 1;
+        if row < self.rows && col < self.cols {
+            self.grid[row][col] ^= 1;
+        }
     }
 
     pub fn next_generation(&mut self) {
-        let mut new_grid = [[0; NUM_COLS]; NUM_ROWS];
+        let mut new_grid = vec![vec![0; self.cols]; self.rows];
 
         for (i, row) in self.grid.iter().enumerate() {
             for (j, &cell) in row.iter().enumerate() {
@@ -77,9 +84,9 @@ impl Universe {
                 let new_col = col as isize + j;
 
                 if new_row >= 0
-                    && new_row < NUM_ROWS as isize
+                    && new_row < self.rows as isize
                     && new_col >= 0
-                    && new_col < NUM_COLS as isize
+                    && new_col < self.cols as isize
                 {
                     count += self.grid[new_row as usize][new_col as usize];
                 }

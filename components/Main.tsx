@@ -6,31 +6,52 @@ import init, { Universe } from "life-game-core";
 import useInterval from "./useInterval";
 import { Globe, Pause, Play, XCircle } from "lucide-react";
 
-const numRows = 25;
-const numCols = 35;
-
 export function Main() {
+  const [gridSize, setGridSize] = useState({ rows: 25, cols: 25 });
+  const [tempGridSize, setTempGridSize] = useState({ rows: 25, cols: 25 });
   const [grid, setGrid] = useState<number[][]>([]);
   const universeRef = useRef<Universe | null>(null);
   const [running, setRunning] = useState(false);
   const runningRef = useRef(running);
   runningRef.current = running;
 
+  const reinitializeUniverse = useCallback(() => {
+    if (universeRef.current) {
+      universeRef.current.free(); // 释放之前的实例
+    }
+    universeRef.current = new Universe(gridSize.rows, gridSize.cols);
+    universeRef.current.random();
+    setGrid(convertToGrid(universeRef.current.get_grid()));
+  }, [gridSize]);
+
   useEffect(() => {
     init().then(() => {
-      universeRef.current = new Universe();
-      universeRef.current.random();
-      setGrid(convertToGrid(universeRef.current.get_grid()));
+      reinitializeUniverse();
     });
-  }, []);
+  }, [reinitializeUniverse]);
 
-  const convertToGrid = (flatArray: Uint8Array): number[][] => {
-    const grid = [];
-    for (let i = 0; i < numRows; i++) {
-      grid.push(Array.from(flatArray.slice(i * numCols, (i + 1) * numCols)));
+  const handleApplyGridSize = () => {
+    if (running) {
+      setRunning(false);
+      runningRef.current = false;
     }
-    return grid;
+    setGridSize(tempGridSize);
   };
+
+  const convertToGrid = useCallback(
+    (flatArray: Uint8Array): number[][] => {
+      const grid = [];
+      for (let i = 0; i < gridSize.rows; i++) {
+        grid.push(
+          Array.from(
+            flatArray.slice(i * gridSize.cols, (i + 1) * gridSize.cols)
+          )
+        );
+      }
+      return grid;
+    },
+    [gridSize]
+  );
 
   const runSimulation = useCallback(() => {
     if (!runningRef.current || !universeRef.current) {
@@ -38,7 +59,7 @@ export function Main() {
     }
     universeRef.current.next_generation();
     setGrid(convertToGrid(universeRef.current.get_grid()));
-  }, []);
+  }, [convertToGrid]);
 
   useInterval(() => {
     runSimulation();
@@ -54,10 +75,54 @@ export function Main() {
         Game of Life
       </h1>
 
+      <div className="my-4 flex justify-center gap-4">
+        <div>
+          <label>rows: </label>
+          <input
+            type="number"
+            value={tempGridSize.rows}
+            onChange={(e) =>
+              setTempGridSize({
+                ...tempGridSize,
+                rows: Math.max(
+                  5,
+                  Math.min(100, parseInt(e.target.value) || 25)
+                ),
+              })
+            }
+            min="5"
+            max="100"
+            className="w-20 px-2 border rounded"
+          />
+        </div>
+        <div>
+          <label>cols: </label>
+          <input
+            type="number"
+            value={tempGridSize.cols}
+            onChange={(e) =>
+              setTempGridSize({
+                ...tempGridSize,
+                cols: Math.max(
+                  5,
+                  Math.min(100, parseInt(e.target.value) || 25)
+                ),
+              })
+            }
+            min="5"
+            max="100"
+            className="w-20 px-2 border rounded"
+          />
+        </div>
+        <Button onClick={handleApplyGridSize} variant="outline">
+          Apply
+        </Button>
+      </div>
+
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: `repeat(${numCols}, minmax(0, 1fr))`,
+          gridTemplateColumns: `repeat(${gridSize.cols}, minmax(0, 1fr))`,
           width: "fit-content",
           margin: "0 auto",
         }}
