@@ -6,6 +6,7 @@ pub struct Universe {
     rows: usize,
     cols: usize,
     grid: Vec<Vec<u8>>,
+    history: Vec<Vec<Vec<u8>>>, // 添加历史状态记录
 }
 
 impl Default for Universe {
@@ -14,6 +15,7 @@ impl Default for Universe {
             rows: 25,
             cols: 25,
             grid: vec![vec![0; 25]; 25],
+            history: Vec::new(), // 初始化历史记录
         }
     }
 }
@@ -28,6 +30,7 @@ impl Universe {
             rows,
             cols,
             grid: vec![vec![0; cols]; rows],
+            history: Vec::new(), // 初始化历史记录
         }
     }
 
@@ -43,6 +46,11 @@ impl Universe {
         self.grid = vec![vec![0; self.cols]; self.rows];
     }
 
+    // 清空历史记录
+    pub fn clear_history(&mut self) {
+        self.history.clear();
+    }
+
     pub fn toggle_cell(&mut self, row: usize, col: usize) {
         if row < self.rows && col < self.cols {
             self.grid[row][col] ^= 1;
@@ -50,6 +58,13 @@ impl Universe {
     }
 
     pub fn next_generation(&mut self) {
+        // 保存当前状态到历史
+        self.history.push(self.grid.clone());
+        // 限制历史记录长度，避免内存占用过大
+        if self.history.len() > 100 {
+            self.history.remove(0);
+        }
+
         let mut new_grid = vec![vec![0; self.cols]; self.rows];
 
         for (i, row) in self.grid.iter().enumerate() {
@@ -67,6 +82,20 @@ impl Universe {
         }
 
         self.grid = new_grid;
+    }
+
+    // 回退到上一步
+    pub fn prev_generation(&mut self) -> bool {
+        if let Some(prev_grid) = self.history.pop() {
+            self.grid = prev_grid;
+            return true;
+        }
+        false
+    }
+
+    // 检查是否有历史可回退
+    pub fn has_history(&self) -> bool {
+        !self.history.is_empty()
     }
 
     pub fn get_grid(&self) -> Array {
