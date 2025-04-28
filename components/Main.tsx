@@ -5,7 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import init, { Universe } from "life-game-core";
 import useInterval from "./useInterval";
-import { Globe, Pause, Play, XCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Globe,
+  Pause,
+  Play,
+  XCircle,
+} from "lucide-react";
 
 export function Main() {
   const [gridSize, setGridSize] = useState({ rows: 25, cols: 25 });
@@ -224,6 +231,7 @@ export function Main() {
           size="lg"
           onClick={() => {
             if (universeRef.current) {
+              universeRef.current.clear_history(); // 清空历史
               universeRef.current.random();
               setGrid(universeRef.current.get_grid() as Array<Array<number>>);
             }
@@ -240,6 +248,7 @@ export function Main() {
           size="lg"
           onClick={() => {
             if (universeRef.current) {
+              universeRef.current.clear_history(); // 清空历史
               universeRef.current.clear();
               setGrid(universeRef.current.get_grid() as Array<Array<number>>);
             }
@@ -249,6 +258,50 @@ export function Main() {
             <XCircle />
           </span>
           <span className="mx-1">Clear</span>
+        </Button>
+
+        {/* 单步后退按钮 */}
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={() => {
+            if (
+              universeRef.current &&
+              universeRef.current.has_history &&
+              universeRef.current.has_history()
+            ) {
+              universeRef.current.prev_generation();
+              setGrid(universeRef.current.get_grid() as Array<Array<number>>);
+            }
+          }}
+          disabled={
+            !universeRef.current ||
+            !universeRef.current.has_history ||
+            !universeRef.current.has_history()
+          }
+        >
+          <span className="icon">
+            <ArrowLeft />
+          </span>
+          <span className="mx-1">Step Back</span>
+        </Button>
+
+        {/* 单步前进按钮 */}
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={() => {
+            if (universeRef.current) {
+              universeRef.current.next_generation();
+              setGrid(universeRef.current.get_grid() as Array<Array<number>>);
+            }
+          }}
+          disabled={!exists(grid)}
+        >
+          <span className="icon">
+            <ArrowRight />
+          </span>
+          <span className="mx-1">Step Forward</span>
         </Button>
       </div>
     </div>
