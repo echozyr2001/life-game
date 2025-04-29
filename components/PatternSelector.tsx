@@ -49,9 +49,16 @@ export function PatternSelector({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const cellSize = 15;
+    const maxPreviewSize = 300; // 预览的最大尺寸
     const rows = currentPattern.length;
     const cols = currentPattern[0].length;
+
+    // 动态计算单元格大小，确保图案完全适应预览区域
+    const cellSizeX = Math.floor(maxPreviewSize / cols);
+    const cellSizeY = Math.floor(maxPreviewSize / rows);
+    const cellSize = Math.max(5, Math.min(cellSizeX, cellSizeY, 15)); // 最小5px，最大15px
+
+    // 计算实际显示尺寸
     const width = cols * cellSize;
     const height = rows * cellSize;
 
@@ -150,12 +157,23 @@ export function PatternSelector({
               <div>
                 <h3 className="text-lg font-medium mb-2">Preview</h3>
                 <div className="border rounded p-3 bg-gray-50">
-                  <canvas
-                    ref={canvasRef}
+                  <div
+                    className="flex justify-center items-center"
                     style={{
-                      border: "1px solid #E2EBF0",
+                      maxWidth: "300px",
+                      maxHeight: "300px",
+                      overflow: "auto",
                     }}
-                  />
+                  >
+                    <canvas
+                      ref={canvasRef}
+                      style={{
+                        border: "1px solid #E2EBF0",
+                        maxWidth: "100%",
+                        maxHeight: "100%",
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -183,6 +201,7 @@ export function PatternSelector({
 // 小型图案预览组件
 function PatternPreview({ pattern }: { pattern: number[][] }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const maxPreviewSize = 120; // 预览的最大尺寸
 
   useEffect(() => {
     if (!canvasRef.current || !pattern.length) return;
@@ -191,9 +210,16 @@ function PatternPreview({ pattern }: { pattern: number[][] }) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const cellSize = 8; // 小一点的单元格
     const rows = pattern.length;
     const cols = pattern[0].length;
+
+    // 动态计算单元格大小，确保图案完全适应预览区域
+    // 计算水平和垂直方向的单元格大小，取较小值确保完全显示
+    const cellSizeX = Math.floor(maxPreviewSize / cols);
+    const cellSizeY = Math.floor(maxPreviewSize / rows);
+    const cellSize = Math.max(1, Math.min(cellSizeX, cellSizeY));
+
+    // 计算实际显示尺寸
     const width = cols * cellSize;
     const height = rows * cellSize;
 
@@ -216,11 +242,18 @@ function PatternPreview({ pattern }: { pattern: number[][] }) {
   }, [pattern]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        border: "1px solid #E2EBF0",
-      }}
-    />
+    <div
+      className="flex justify-center items-center"
+      style={{ width: maxPreviewSize, height: maxPreviewSize }}
+    >
+      <canvas
+        ref={canvasRef}
+        style={{
+          border: "1px solid #E2EBF0",
+          maxWidth: "100%",
+          maxHeight: "100%",
+        }}
+      />
+    </div>
   );
 }
