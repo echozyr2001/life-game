@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import init, { Universe } from "life-game-core";
 import useInterval from "./useInterval";
+import { PatternSelector } from "./PatternSelector";
 import {
   ArrowLeft,
   ArrowRight,
@@ -12,6 +13,7 @@ import {
   Pause,
   Play,
   XCircle,
+  Grid3X3,
 } from "lucide-react";
 
 export function Main() {
@@ -24,6 +26,7 @@ export function Main() {
   runningRef.current = running;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [speed, setSpeed] = useState(150);
+  const [showPatternSelector, setShowPatternSelector] = useState(false);
 
   const reinitializeUniverse = useCallback(() => {
     if (universeRef.current) {
@@ -131,6 +134,46 @@ export function Main() {
     [gridSize]
   );
 
+  // 处理选中的图案
+  const handleSelectPattern = useCallback(
+    (pattern: number[][]) => {
+      if (!universeRef.current) return;
+
+      // 计算放置图案的起始位置（居中放置）
+      const patternRows = pattern.length;
+      const patternCols = pattern[0].length;
+      const startRow = Math.max(
+        0,
+        Math.floor((gridSize.rows - patternRows) / 2)
+      );
+      const startCol = Math.max(
+        0,
+        Math.floor((gridSize.cols - patternCols) / 2)
+      );
+
+      // 清除历史记录
+      universeRef.current.clear_history();
+
+      // 放置图案
+      for (let i = 0; i < patternRows; i++) {
+        for (let j = 0; j < patternCols; j++) {
+          const row = startRow + i;
+          const col = startCol + j;
+          if (row < gridSize.rows && col < gridSize.cols) {
+            // 如果图案中的单元格为活细胞，则设置对应位置为活细胞
+            if (pattern[i][j] === 1) {
+              universeRef.current.toggle_cell(row, col);
+            }
+          }
+        }
+      }
+
+      // 更新网格
+      setGrid(universeRef.current.get_grid() as Array<Array<number>>);
+    },
+    [gridSize]
+  );
+
   const exists = (grid: number[][]) => {
     return grid.length > 0 && grid.some((row) => row.includes(1));
   };
@@ -210,7 +253,14 @@ export function Main() {
         />
       </div>
 
-      <div className="buttons m-3 p-5 gap-8 flex justify-center">
+      {showPatternSelector && (
+        <PatternSelector
+          onSelectPattern={handleSelectPattern}
+          onClose={() => setShowPatternSelector(false)}
+        />
+      )}
+
+      <div className="buttons m-3 p-5 gap-4 flex justify-center flex-wrap">
         <Button
           variant={running ? "destructive" : "default"}
           size="lg"
@@ -302,6 +352,18 @@ export function Main() {
             <ArrowRight />
           </span>
           <span className="mx-1">Step Forward</span>
+        </Button>
+
+        {/* 添加经典图案按钮 */}
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={() => setShowPatternSelector(true)}
+        >
+          <span className="icon">
+            <Grid3X3 />
+          </span>
+          <span className="mx-1">Add classic patterns</span>
         </Button>
       </div>
     </div>
