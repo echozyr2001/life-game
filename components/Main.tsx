@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
+import { ElasticSlider } from "@/components/ui/elastic-slider";
 import init, { Universe } from "life-game-core";
 import useInterval from "./useInterval";
 import { PatternSelector } from "./PatternSelector";
@@ -333,12 +333,11 @@ export function Main() {
         </Button>
         <div className="ml-4 flex items-center gap-2">
           <label>Speed: </label>
-          <Slider
-            className="w-32"
+          <ElasticSlider
             min={50}
             max={500}
             value={[500 - speed + 50]}
-            onValueChange={(values) => {
+            onValueChange={(values: number[]) => {
               if (values.length > 0) {
                 setSpeed(500 - values[0] + 50);
               }
