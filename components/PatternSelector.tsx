@@ -13,11 +13,13 @@ import { RotateCw, FlipHorizontal, X } from "lucide-react";
 
 interface PatternSelectorProps {
   onSelectPattern: (pattern: number[][]) => void;
+  onStartDragging: (pattern: number[][]) => void;
   onClose: () => void;
 }
 
 export function PatternSelector({
   onSelectPattern,
+  onStartDragging,
   onClose,
 }: PatternSelectorProps) {
   const [selectedCategory, setSelectedCategory] =
@@ -97,7 +99,7 @@ export function PatternSelector({
   // 应用选中的图案
   const handleApply = () => {
     if (currentPattern.length) {
-      onSelectPattern(currentPattern);
+      onStartDragging(currentPattern);
       onClose();
     }
   };

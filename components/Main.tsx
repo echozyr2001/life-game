@@ -27,6 +27,9 @@ export function Main() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [speed, setSpeed] = useState(150);
   const [showPatternSelector, setShowPatternSelector] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragPattern, setDragPattern] = useState<number[][]>([]);
+  const [dragPosition, setDragPosition] = useState({ row: 0, col: 0 });
 
   const reinitializeUniverse = useCallback(() => {
     if (universeRef.current) {
@@ -97,6 +100,7 @@ export function Main() {
 
     ctx.clearRect(0, 0, displayWidth, displayHeight);
 
+    // 绘制基本网格
     for (let i = 0; i < gridSize.rows; i++) {
       if (!grid[i]) continue; // 跳过不存在的行
       for (let j = 0; j < gridSize.cols; j++) {
@@ -107,12 +111,122 @@ export function Main() {
         ctx.strokeRect(j * cellSize, i * cellSize, cellSize, cellSize);
       }
     }
-  }, [grid, gridSize]);
+
+    // 如果处于拖拽模式，绘制半透明的预览图案
+    if (isDragging && dragPattern.length) {
+      const patternRows = dragPattern.length;
+      const patternCols = dragPattern[0].length;
+
+      // 设置半透明效果
+      ctx.globalAlpha = 0.6;
+
+      for (let i = 0; i < patternRows; i++) {
+        for (let j = 0; j < patternCols; j++) {
+          const row = dragPosition.row + i;
+          const col = dragPosition.col + j;
+
+          // 确保在网格范围内
+          if (
+            row >= 0 &&
+            row < gridSize.rows &&
+            col >= 0 &&
+            col < gridSize.cols
+          ) {
+            if (dragPattern[i][j]) {
+              ctx.fillStyle = "#4B91F7"; // 使用不同颜色以区分
+              ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+              ctx.strokeStyle = "#3B82F6";
+              ctx.strokeRect(
+                col * cellSize,
+                row * cellSize,
+                cellSize,
+                cellSize
+              );
+            }
+          }
+        }
+      }
+
+      // 恢复透明度
+      ctx.globalAlpha = 1.0;
+    }
+  }, [grid, gridSize, isDragging, dragPattern, dragPosition]);
+
+  // 处理鼠标移动事件
+  const handleCanvasMouseMove = useCallback(
+    (event: React.MouseEvent<HTMLCanvasElement>) => {
+      if (!isDragging || !canvasRef.current) return;
+
+      const canvas = canvasRef.current;
+      const rect = canvas.getBoundingClientRect();
+      const cellSize = 15;
+
+      // 计算鼠标位置相对于 Canvas 的坐标
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      // 计算对应的网格单元格（网格吸附）
+      const col = Math.floor(x / cellSize);
+      const row = Math.floor(y / cellSize);
+
+      // 考虑图案大小，确保图案的左上角在有效位置
+      const patternRows = dragPattern.length;
+      const patternCols = dragPattern[0]?.length || 0;
+
+      // 计算有效的放置位置（确保图案不会超出网格边界）
+      const validRow = Math.min(Math.max(0, row), gridSize.rows - patternRows);
+      const validCol = Math.min(Math.max(0, col), gridSize.cols - patternCols);
+
+      setDragPosition({ row: validRow, col: validCol });
+    },
+    [isDragging, dragPattern, gridSize]
+  );
 
   // 处理 Canvas 点击事件
   const handleCanvasClick = useCallback(
     (event: React.MouseEvent<HTMLCanvasElement>) => {
       if (!canvasRef.current || !universeRef.current) return;
+
+      // 如果处于拖拽模式，放置图案
+      if (isDragging && dragPattern.length) {
+        const patternRows = dragPattern.length;
+        const patternCols = dragPattern[0].length;
+
+        // 清除历史记录
+        universeRef.current.clear_history();
+
+        // 放置图案
+        for (let i = 0; i < patternRows; i++) {
+          for (let j = 0; j < patternCols; j++) {
+            const row = dragPosition.row + i;
+            const col = dragPosition.col + j;
+
+            // 确保在网格范围内
+            if (
+              row >= 0 &&
+              row < gridSize.rows &&
+              col >= 0 &&
+              col < gridSize.cols
+            ) {
+              // 如果图案中的单元格为活细胞，则设置对应位置为活细胞
+              if (dragPattern[i][j] === 1) {
+                // 如果当前单元格状态与要设置的状态不同，则切换
+                if (grid[row][col] !== 1) {
+                  universeRef.current.toggle_cell(row, col);
+                }
+              }
+            }
+          }
+        }
+
+        // 更新网格
+        setGrid(universeRef.current.get_grid() as Array<Array<number>>);
+
+        // 退出拖拽模式
+        setIsDragging(false);
+        setDragPattern([]);
+        return;
+      }
 
       const canvas = canvasRef.current;
       const rect = canvas.getBoundingClientRect();
@@ -131,10 +245,33 @@ export function Main() {
         setGrid(universeRef.current.get_grid() as Array<Array<number>>);
       }
     },
+    [gridSize, isDragging, dragPattern, dragPosition, grid]
+  );
+
+  // 处理开始拖拽
+  const handleStartDragging = useCallback(
+    (pattern: number[][]) => {
+      setIsDragging(true);
+      setDragPattern(pattern);
+
+      // 初始化拖拽位置（居中）
+      const patternRows = pattern.length;
+      const patternCols = pattern[0].length;
+      const startRow = Math.max(
+        0,
+        Math.floor((gridSize.rows - patternRows) / 2)
+      );
+      const startCol = Math.max(
+        0,
+        Math.floor((gridSize.cols - patternCols) / 2)
+      );
+
+      setDragPosition({ row: startRow, col: startCol });
+    },
     [gridSize]
   );
 
-  // 处理选中的图案
+  // 处理选中的图案（直接放置，不拖拽）
   const handleSelectPattern = useCallback(
     (pattern: number[][]) => {
       if (!universeRef.current) return;
@@ -246,9 +383,10 @@ export function Main() {
         <canvas
           ref={canvasRef}
           onClick={handleCanvasClick}
+          onMouseMove={handleCanvasMouseMove}
           style={{
             border: "1px solid #E2EBF0",
-            cursor: "pointer",
+            cursor: isDragging ? "crosshair" : "pointer",
           }}
         />
       </div>
@@ -256,6 +394,7 @@ export function Main() {
       {showPatternSelector && (
         <PatternSelector
           onSelectPattern={handleSelectPattern}
+          onStartDragging={handleStartDragging}
           onClose={() => setShowPatternSelector(false)}
         />
       )}
