@@ -1,11 +1,5 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { ElasticSlider } from "@/components/ui/elastic-slider";
-import init, { Universe } from "life-game-core";
-import useInterval from "./useInterval";
-import { PatternSelector } from "./PatternSelector";
 import {
   ArrowLeft,
   ArrowRight,
@@ -22,7 +16,14 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogHeader,
-} from "./ui/dialog";
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { ElasticSlider } from "@/components/ui/elastic-slider";
+import { PatternSelector } from "@/components/PatternSelector";
+import { useState, useRef, useCallback, useEffect } from "react";
+
+import init, { Universe } from "life-game-core";
+import useInterval from "./useInterval";
 
 export function Main() {
   const [gridSize, setGridSize] = useState({ rows: 25, cols: 25 });
