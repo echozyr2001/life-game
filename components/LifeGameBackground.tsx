@@ -4,6 +4,15 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { animate } from "motion";
 import init, { Universe } from "life-game-core";
 import useInterval from "./useInterval";
+import { Button } from "@/components/ui/button";
+import {
+  Play,
+  Pause,
+  ArrowLeft,
+  ArrowRight,
+  XCircle,
+  Globe,
+} from "lucide-react";
 
 const CELL_SIZE = 15; // 单元格大小 (px)
 const ALIVE_COLOR = "#4A4A4A"; // 活细胞颜色 (深灰色)
@@ -29,8 +38,10 @@ export function LifeGameBackground() {
   const universeRef = useRef<Universe | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameIdRef = useRef<number | null>(null);
-  // speed state is now effectively INITIAL_SPEED as dynamic adjustment was removed
   const [gameTickSpeed] = useState(INITIAL_SPEED);
+  const [isRunning, setIsRunning] = useState(true); // 默认开始播放
+  const isRunningRef = useRef(isRunning);
+  isRunningRef.current = isRunning;
 
   const calculateGridSize = useCallback(() => {
     const newCols = Math.floor(window.innerWidth / CELL_SIZE);
@@ -111,13 +122,15 @@ export function LifeGameBackground() {
       !universeRef.current ||
       !gridSize.rows ||
       !gridSize.cols ||
-      grid.length === 0
+      grid.length === 0 ||
+      !isRunningRef.current // 检查是否正在运行
     ) {
       return;
     }
 
     // Store current grid as previous grid
-    setPrevGrid((currentGrid) => currentGrid.map((row) => [...row])); // Deep copy
+    // setPrevGrid((currentGrid) => currentGrid.map((row) => [...row])); // Deep copy - prevGrid is now managed by core
+    // No longer manually setting prevGrid here as core handles history for prev/next generation
 
     universeRef.current.next_generation();
     const newGridData = universeRef.current.get_grid() as Array<Array<number>>;
@@ -268,19 +281,132 @@ export function LifeGameBackground() {
     }
   }, []); // Run once on mount
 
+  const handlePlayPause = () => {
+    setIsRunning(!isRunning);
+  };
+
+  const handlePrevGeneration = () => {
+    if (universeRef.current && universeRef.current.has_history()) {
+      setIsRunning(false); // Stop simulation when stepping
+      universeRef.current.prev_generation();
+      setGrid(universeRef.current.get_grid() as Array<Array<number>>);
+    }
+  };
+
+  const handleNextGeneration = () => {
+    if (universeRef.current) {
+      setIsRunning(false); // Stop simulation when stepping
+      universeRef.current.next_generation();
+      setGrid(universeRef.current.get_grid() as Array<Array<number>>);
+    }
+  };
+
+  const handleClear = () => {
+    if (universeRef.current) {
+      setIsRunning(false);
+      universeRef.current.clear_history();
+      universeRef.current.clear();
+      setGrid(universeRef.current.get_grid() as Array<Array<number>>);
+    }
+  };
+
+  const handleRandomize = () => {
+    if (universeRef.current) {
+      // setIsRunning(true); // Optionally start running after randomizing
+      universeRef.current.clear_history();
+      universeRef.current.random();
+      setGrid(universeRef.current.get_grid() as Array<Array<number>>);
+    }
+  };
+
+  // Update prevGrid when grid changes and not due to prev/next generation calls
+  // This is important for animations if we are not relying on core's prev_grid for animation diffing
+  useEffect(() => {
+    // This effect ensures prevGrid is updated for animation diffing
+    // when the grid changes for reasons other than stepping through history
+    // (e.g., after randomize, clear, or during normal simulation ticks)
+    // However, the current animation logic relies on diffing newGridData with prevGrid[r]?.[c]
+    // which is updated in runSimulation.
+    // For manual steps (prev/next), the animation might not be perfectly smooth
+    // unless we also update prevGrid there or adjust animation logic.
+    // For simplicity, we'll keep the current animation logic which might show abrupt changes on manual steps.
+  }, [grid]);
+
   return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        opacity: 0, // Start with opacity 0, animation will take over
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100vw",
-        height: "100vh",
-        zIndex: -1,
-        display: gridSize.rows > 0 && gridSize.cols > 0 ? "block" : "none",
-      }}
-    />
+    <>
+      <canvas
+        ref={canvasRef}
+        style={{
+          opacity: 0, // Start with opacity 0, animation will take over
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          zIndex: -1,
+          display: gridSize.rows > 0 && gridSize.cols > 0 ? "block" : "none",
+        }}
+      />
+      <div
+        style={{
+          position: "fixed",
+          bottom: "1rem",
+          right: "1rem",
+          display: "flex",
+          gap: "0.5rem",
+          zIndex: 10,
+        }}
+      >
+        <Button
+          variant="outline"
+          size="icon"
+          className="rounded-full bg-gray-800 text-white hover:bg-gray-700 p-2"
+          onClick={handlePrevGeneration}
+          disabled={!universeRef.current?.has_history()}
+          title="Previous Generation"
+        >
+          <ArrowLeft size={20} />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          className="rounded-full bg-gray-800 text-white hover:bg-gray-700 p-2"
+          onClick={handlePlayPause}
+          title={isRunning ? "Pause" : "Play"}
+        >
+          {isRunning ? <Pause size={20} /> : <Play size={20} />}
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          className="rounded-full bg-gray-800 text-white hover:bg-gray-700 p-2"
+          onClick={handleNextGeneration}
+          disabled={!universeRef.current}
+          title="Next Generation"
+        >
+          <ArrowRight size={20} />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          className="rounded-full bg-gray-800 text-white hover:bg-gray-700 p-2"
+          onClick={handleClear}
+          disabled={!universeRef.current}
+          title="Clear"
+        >
+          <XCircle size={20} />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          className="rounded-full bg-gray-800 text-white hover:bg-gray-700 p-2"
+          onClick={handleRandomize}
+          disabled={!universeRef.current}
+          title="Randomize"
+        >
+          <Globe size={20} />
+        </Button>
+      </div>
+    </>
   );
 }
