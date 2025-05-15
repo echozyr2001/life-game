@@ -6,8 +6,8 @@ import init, { Universe } from "life-game-core";
 import useInterval from "./useInterval";
 
 const CELL_SIZE = 15; // 单元格大小 (px)
-const ALIVE_COLOR = "#000000"; // 活细胞颜色 (黑色)
-const DEAD_COLOR = "#FFFFFF"; // 死细胞颜色 (白色) // This is also the background color
+const ALIVE_COLOR = "#4A4A4A"; // 活细胞颜色 (深灰色)
+const DEAD_COLOR = "#F5F5F5"; // 死细胞颜色 (浅灰色) // This is also the background color
 // const GRID_COLOR = "#E2EBF0"; // 网格线颜色 (此颜色不再使用，但保留定义以防未来需要)
 const CELL_PADDING = 1; // 细胞内边距，用于创建间隙
 const INITIAL_SPEED = 150; // 游戏逻辑更新速度 (ms)
